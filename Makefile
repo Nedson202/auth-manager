@@ -1,8 +1,8 @@
-default:
+build:
 	@echo "=============building Local API============="
 	docker build -f Dockerfile -t main .
 
-start: default
+start: build
 	@echo "=============starting api locally============="
 	docker-compose up -d
 
