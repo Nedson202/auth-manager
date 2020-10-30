@@ -5,7 +5,7 @@ ENV GO111MODULE=on
 
 RUN apk update -qq && apk add git
 
-WORKDIR $GOPATH/src/github.com/user-service
+WORKDIR /go/src/github.com/nedson202/user-service
 
 COPY go.mod .
 
@@ -19,6 +19,6 @@ RUN go get github.com/githubnemo/CompileDaemon
 
 COPY . .
 
-ENTRYPOINT CompileDaemon -log-prefix=false -build="go build -o bin/user-service" -command="./bin/user-service"  -color -graceful-kill
+ENTRYPOINT CompileDaemon -log-prefix=false -build="go build -o bin/user-service" -command="bin/user-service"  -color -graceful-kill
 
-EXPOSE 7000
+EXPOSE 4000

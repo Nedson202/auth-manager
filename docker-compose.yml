@@ -1,11 +1,32 @@
-version: '3.6'
+version: "3.6"
 
 services:
-    api:
+    db:
+        image: postgres
+        ports:
+            - 5432:5432
+        restart: unless-stopped
+        environment:
+            POSTGRES_PASSWORD: postgres
+            PG_HOST: host.docker.internal
+
+    app:
+        build:
+            context: ./
+            dockerfile: ./Dockerfile
         container_name: user-service
         restart: always
-        build: .
         ports:
-            - 80:7000
+            - 4000:4000
+        links:
+            - db
+        depends_on:
+            - db
+        env_file:
+            - ./.env
+        environment:
+            POSTGRES_PASSWORD: postgres
+            PG_HOST: host.docker.internal
+            PORT: 4000
         volumes:
-            - ./:/go/src/github.com/user-service
+            - ./:/go/src/github.com/nedson202/user-service
