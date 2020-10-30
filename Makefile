@@ -2,24 +2,20 @@ build:
 	@echo "=============building Local API============="
 	docker build -f Dockerfile -t main .
 
-start: build
-	@echo "=============starting api locally============="
-	docker-compose up -d
-
 logs:
 	docker-compose logs -f
 
+start:
+	@echo "=============starting api locally============="
+	docker-compose up -d
+	@echo "=============Loading service logs============="
+	make logs
+
 stop:
-	docker-compose down
+	docker-compose down -v --rmi all
 
 test:
 	go test -v -cover ./...
-
-clean: down
-	@echo "=============cleaning up============="
-	rm -f api
-	docker system prune -f
-	docker volume prune -f
 
 dev:
 	@echo "=============starting api in development mode============="

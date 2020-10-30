@@ -1,13 +1,12 @@
-package database
+package service
 
 import (
-	"database/sql"
+	"log"
 
-	"github.com/nedson202/user-service/config"
+	"github.com/jmoiron/sqlx"
 )
 
-// CreateUserTable with psql
-func CreateUserTable(db *sql.DB) {
+func (app App) createUserTable(db *sqlx.DB) {
 	var query = `
 		CREATE TABLE IF NOT EXISTS users (
 			id serial PRIMARY KEY,
@@ -22,18 +21,21 @@ func CreateUserTable(db *sql.DB) {
 		)
 	`
 	_, err := db.Query(query)
-	config.LogFatal(err)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return
 }
 
-// DropUserTable with psql
-func DropUserTable(db *sql.DB) {
+func (app App) dropUserTable(db *sqlx.DB) {
 	var query = `
 		DROP TABLE users
 	`
 	_, err := db.Query(query)
-	config.LogFatal(err)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return
 }

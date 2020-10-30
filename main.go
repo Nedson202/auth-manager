@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -9,54 +10,78 @@ import (
 	"syscall"
 	"time"
 
-	"database/sql"
-
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
+	"github.com/rs/cors"
 	"github.com/subosito/gotenv"
 
-	"github.com/gorilla/handlers"
 	"github.com/asaskevich/govalidator"
+	"github.com/gorilla/mux"
 
-	"github.com/nedson202/user-service/driver"
-	"github.com/nedson202/user-service/config"
-	"github.com/nedson202/user-service/routes"
-	"github.com/nedson202/user-service/database"
+	"github.com/nedson202/user-service/service"
 )
-
-var db *sql.DB
 
 func init() {
 	err := gotenv.Load()
-	config.LogFatal(err)
+	if err != nil {
+		log.Fatal(err)
+	}
+	govalidator.SetFieldsRequiredByDefault(false)
 }
 
-func init() {
-  govalidator.SetFieldsRequiredByDefault(false)
+func initDatabase() *sqlx.DB {
+	pgHost := os.Getenv("PG_HOST")
+	pgPort := os.Getenv("PG_PORT")
+	pgUser := os.Getenv("PG_USER")
+	pgPassword := os.Getenv("PG_PASSWORD")
+
+	log.Println("Connecting to Database")
+	db, err := sqlx.Connect("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s sslmode=disable",
+		pgHost,
+		pgPort,
+		pgUser,
+		pgPassword,
+	))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Println("Connected to Database")
+	return db
 }
 
 func main() {
-	db = driver.DB
-	database.MigrateDatabaseTables(db)
+	db := initDatabase()
 
-	router := routes.NewRouter()
-	
-	allowedOrigins := handlers.AllowedOrigins([]string{"*"}) 
-  allowedMethods := handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "PUT"})
-	
+	router := mux.NewRouter()
+
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
+	})
+
 	port := os.Getenv("PORT")
 
+	_, err := service.New(router, db)
+	if err != nil {
+		log.Println(err)
+	}
+
+	combineServerAddress := fmt.Sprintf("%s%s", ":", port)
 	server := &http.Server{
 		// launch server with CORS validations
-		Handler:      handlers.CORS(allowedOrigins, allowedMethods)(router),
-		Addr:         port,
+		Handler:      c.Handler(router),
+		Addr:         combineServerAddress,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
 
 	// Start Server
 	func() {
-		log.Println("Starting Server on http://localhost:7000")
+		startMessage := fmt.Sprintf("%s%s", "Server started on http://localhost:", port)
+		log.Println(startMessage)
+
 		if err := server.ListenAndServe(); err != nil {
-			config.LogFatal(err)
+			log.Println(err)
 		}
 	}()
 
