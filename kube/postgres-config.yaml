@@ -1,0 +1,18 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-configuration
+  labels:
+    app: postgres
+data:
+  POSTGRES_DB: postgresdb
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  PG_HOST: postgres-service
+
+  JWT_SECRET: sj9wn2323-__294827&2hbdysw4b
+  PG_PORT: "5432"
+  PG_USER: postgres
+  PG_PASSWORD: postgres
+  PG_DATABASE: postgresdb

@@ -1,0 +1,31 @@
+version: "3.6"
+
+services:
+    db:
+        image: postgres
+        ports:
+            - 5432:5432
+        restart: unless-stopped
+        environment:
+            POSTGRES_PASSWORD: postgres
+            PG_HOST: host.docker.internal
+            POSTGRES_DB: postgresdb
+
+    app:
+        build:
+            context: ./
+            dockerfile: ./prod.Dockerfile
+        container_name: auth-manager
+        restart: always
+        ports:
+            - 5000:5000
+        links:
+            - db
+        depends_on:
+            - db
+        env_file:
+            - ./.env
+        environment:
+            PG_HOST: host.docker.internal
+        volumes:
+            - ./:/go/src/github.com/nedson202/auth-manager
