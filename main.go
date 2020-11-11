@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
@@ -18,7 +19,7 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
 
-	"github.com/nedson202/user-service/service"
+	"github.com/nedson202/auth-manager/auth_service_rest"
 )
 
 func init() {
@@ -34,13 +35,15 @@ func initDatabase() *sqlx.DB {
 	pgPort := os.Getenv("PG_PORT")
 	pgUser := os.Getenv("PG_USER")
 	pgPassword := os.Getenv("PG_PASSWORD")
+	pgDbName := os.Getenv("PG_DATABASE")
 
 	log.Println("Connecting to Database")
-	db, err := sqlx.Connect("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s sslmode=disable",
+	db, err := sqlx.Connect("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		pgHost,
 		pgPort,
 		pgUser,
 		pgPassword,
+		pgDbName,
 	))
 	if err != nil {
 		log.Fatalln(err)
@@ -49,7 +52,49 @@ func initDatabase() *sqlx.DB {
 	return db
 }
 
+func initCachePool() *redis.Pool {
+	cacheHost := os.Getenv("REDIS_HOST")
+	cachePort := os.Getenv("REDIS_PORT")
+
+	cacheAddress := fmt.Sprintf("%s:%s", cacheHost, cachePort)
+	log.Println("Creating caching pool: PING...")
+	pool := newPool(cacheAddress)
+
+	s, err := pingCachePool(pool)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	log.Println(fmt.Sprintf("Created caching pool: %s", s))
+	return pool
+}
+
+func newPool(address string) *redis.Pool {
+	return &redis.Pool{
+		MaxIdle:     10,
+		IdleTimeout: 5 * time.Second,
+		Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", address) },
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
+	}
+}
+
+func pingCachePool(pool *redis.Pool) (s string, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+
+	s, err = redis.String(conn.Do("PING"))
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func main() {
+	jwtSecret := os.Getenv("JWT_SECRET")
 	db := initDatabase()
 
 	router := mux.NewRouter()
@@ -59,26 +104,22 @@ func main() {
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
 	})
 
-	port := os.Getenv("PORT")
-
-	_, err := service.New(router, db)
+	_, err := auth_service_rest.New(router, db, jwtSecret, nil)
 	if err != nil {
 		log.Println(err)
 	}
 
-	combineServerAddress := fmt.Sprintf("%s%s", ":", port)
 	server := &http.Server{
 		// launch server with CORS validations
 		Handler:      c.Handler(router),
-		Addr:         combineServerAddress,
+		Addr:         ":5000",
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
 
 	// Start Server
 	func() {
-		startMessage := fmt.Sprintf("%s%s", "Server started on http://localhost:", port)
-		log.Println(startMessage)
+		log.Println("Server started on http://localhost:5000")
 
 		if err := server.ListenAndServe(); err != nil {
 			log.Println(err)

@@ -1,4 +1,4 @@
-package service
+package auth_service_rest
 
 import (
 	"net/http"
@@ -6,9 +6,11 @@ import (
 
 func (app App) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	app.respondWithJSON(w, http.StatusOK,
-		RootPayload{
-			Error:   false,
-			Payload: "User management API running",
+		DataPayload{
+			Success: true,
+			Data: map[string]interface{}{
+				"message": "Auth Management REST API running",
+			},
 		},
 	)
 }

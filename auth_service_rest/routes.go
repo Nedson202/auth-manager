@@ -1,4 +1,4 @@
-package service
+package auth_service_rest
 
 import (
 	"net/http"
@@ -22,71 +22,68 @@ func (app App) getHealthCheckHandler() Route {
 }
 
 func (app App) getUserRoutes() []Route {
-	addUserHandlers := app.multipleMiddleware(
-		app.addUserHandler(),
+	createUserHandler := app.multipleMiddleware(
+		app.createUserHandler(),
+		app.validateRequest,
 		app.validateAuthInput,
-		app.verifyUser,
 	)
 
-	loginUserHandlers := app.multipleMiddleware(
+	loginUserHandler := app.multipleMiddleware(
 		app.loginUserHandler(),
+		app.validateRequest,
 		app.validateAuthInput,
 	)
 
-	getUserHandlers := app.multipleMiddleware(
+	getUserHandler := app.multipleMiddleware(
 		app.getUserHandler(),
+		app.validateRequest,
 		app.validateToken,
 	)
 
-	updateUserHandlers := app.multipleMiddleware(
+	updateUserHandler := app.multipleMiddleware(
 		app.updateUserHandler(),
+		app.validateRequest,
 		app.validateToken,
-		app.verifyUser,
+		app.verifyUpdateDetails,
 		app.validateUserUpdate,
 	)
 
-	deleteUserHandlers := app.multipleMiddleware(
-		app.deleteUserHandler(),
+	tokenRefreshHandler := app.multipleMiddleware(
+		app.refreshToken(),
+		app.validateRequest,
 		app.validateToken,
-		app.verifyUser,
 	)
 
 	userRoutes = append(userRoutes,
 		Route{
-			"GetUsers",
-			"GET",
-			"/api/v1/users",
-			app.getUsersHandler,
-		},
-		Route{
 			"GetUser",
 			"GET",
 			"/api/v1/users/profile",
-			getUserHandlers,
+			getUserHandler,
 		},
 		Route{
 			"AddUser",
 			"POST",
-			"/api/v1/users/signup",
-			addUserHandlers,
+			"/api/v1/users",
+			createUserHandler,
 		},
 		Route{
 			"LoginUser",
 			"POST",
 			"/api/v1/users/login",
-			loginUserHandlers,
+			loginUserHandler,
 		},
 		Route{
-			"UpdateBook",
-			"PUT",
+			"UpdateUser",
+			"PATCH",
 			"/api/v1/users",
-			updateUserHandlers,
+			updateUserHandler,
 		},
 		Route{
-			"DeleteUser",
-			"DELETE",
-			"/api/v1/users/{id}",
-			deleteUserHandlers,
+			"RefreshToken",
+			"POST",
+			"/api/v1/users/refresh",
+			tokenRefreshHandler,
 		},
 	)
 
@@ -95,13 +92,12 @@ func (app App) getUserRoutes() []Route {
 
 func (app App) newRouter(router *mux.Router) *mux.Router {
 	userRoutes := app.getUserRoutes()
-	homeRoute := app.getHealthCheckHandler()
+	healthCheck := app.getHealthCheckHandler()
 
-	routes = append(routes, homeRoute)
+	routes = append(routes, healthCheck)
 	routes = append(routes, userRoutes...)
 
 	combineRoutes := router.StrictSlash(true)
-
 	for _, route := range routes {
 		var handler http.Handler
 		handler = route.HandlerFunc
@@ -113,6 +109,5 @@ func (app App) newRouter(router *mux.Router) *mux.Router {
 	}
 
 	router.Use(app.logger)
-
 	return router
 }

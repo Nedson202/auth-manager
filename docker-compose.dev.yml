@@ -3,21 +3,23 @@ version: "3.6"
 services:
     db:
         image: postgres
+        container_name: postgres
         ports:
             - 5432:5432
         restart: unless-stopped
         environment:
             POSTGRES_PASSWORD: postgres
             PG_HOST: host.docker.internal
+            POSTGRES_DB: postgresdb
 
     app:
         build:
             context: ./
-            dockerfile: ./Dockerfile
-        container_name: user-service
-        restart: always
+            dockerfile: ./dev.Dockerfile
+        container_name: auth-manager
+        restart: unless-stopped
         ports:
-            - 4000:4000
+            - 5000:5000
         links:
             - db
         depends_on:
@@ -25,8 +27,6 @@ services:
         env_file:
             - ./.env
         environment:
-            POSTGRES_PASSWORD: postgres
             PG_HOST: host.docker.internal
-            PORT: 4000
         volumes:
-            - ./:/go/src/github.com/nedson202/user-service
+            - ./:/go/src/github.com/nedson202/auth-manager
