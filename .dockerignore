@@ -1,2 +1,4 @@
 bin/
 .git/
+load_testing
+kube

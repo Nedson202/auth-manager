@@ -19,13 +19,14 @@ services:
         container_name: auth-manager
         restart: unless-stopped
         ports:
-            - 5000:5000
+            - 8080:8080
+            - 9090:9090
         links:
             - db
         depends_on:
             - db
         env_file:
-            - ./.env
+            - ./cmd/server/.env
         environment:
             PG_HOST: host.docker.internal
         volumes:

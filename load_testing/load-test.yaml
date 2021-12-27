@@ -1,0 +1,36 @@
+config:
+  target: "http://local.auth.net"
+  http:
+    pool: 10
+  payload:
+    path: "./auth-record.csv"
+    fields:
+      - "email"
+      - "password"
+    skipHeader: true
+  phases:
+    - duration: 60
+      arrivalRate: 50
+      name: Warm up
+    - duration: 120
+      arrivalRate: 50
+      rampTo: 250
+      name: Ramp up load
+    - duration: 600
+      arrivalRate: 500
+      name: Sustained load
+scenarios:
+  - name: "Signup"
+    flow:
+      - post:
+          url: "/api/v1/signup"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+  - name: "Login"
+    flow:
+      - post:
+          url: "/api/v1/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
