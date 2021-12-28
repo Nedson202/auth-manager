@@ -15,7 +15,7 @@ import (
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-func Test_toDoServiceServer_Signup(t *testing.T) {
+func Test_authServiceServer_Signup(t *testing.T) {
 	ctx := context.Background()
 	db, mock, err := sqlmock.New()
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
@@ -67,7 +67,7 @@ func Test_toDoServiceServer_Signup(t *testing.T) {
 	})
 }
 
-func Test_toDoServiceServer_Login(t *testing.T) {
+func Test_authServiceServer_Login(t *testing.T) {
 	ctx := context.Background()
 	db, mock, err := sqlmock.New()
 	sqlxDB := sqlx.NewDb(db, "sqlmock")

@@ -10,13 +10,6 @@ logs:
 test:
 	go test -v -cover ./...
 
-# proto_gen:
-# 	@echo "=============Generating proto============="
-# 	mkdir -p api/proto/v1 && protoc -I ./api/proto/v1 \
-# 		-I. -I$$GOPATH/src/github.com/nedson202/auth-manager/third_party \
-# 		--go_out ./api/proto/v1 --go_opt=paths=source_relative \
-# 		--grpc-gateway_out=logtostderr=true:api/proto/v1 --grpc-gateway_opt paths=source_relative \
-# 		api/proto/v1/auth.proto
 proto_gen:
 	@echo "=============Generating proto============="
 	mkdir -p api/proto/v1 && protoc -I ./api/proto/v1 \
