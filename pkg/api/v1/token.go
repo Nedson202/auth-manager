@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -64,7 +64,7 @@ func (r *tokenService) VerifyToken(token string) (jwt.Claims, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("an error occured verifying token")
 		}
-		return r.config.JwtSecret, nil
+		return []byte(r.config.JwtSecret), nil
 	})
 	if err != nil {
 		log.Println("token-service:VerifyToken->" + err.Error())
